@@ -140,11 +140,22 @@ switch ($page) {
             }
             if (!empty($_FILES['media_file']['name'])) {
                 $file = $_FILES['media_file'];
-                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                $fileName = uniqid('media_', true) . '.' . $extension;
-                $destination = __DIR__ . '/../uploads/' . $fileName;
-                if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    MediaModel::create($fileName, $file['name']);
+                $allowedTypes = [
+                    'image/jpeg' => ['jpg', 'jpeg'],
+                    'image/png' => ['png'],
+                    'image/gif' => ['gif'],
+                    'image/webp' => ['webp'],
+                ];
+                $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->file($file['tmp_name']);
+                $allowedExtensions = $allowedTypes[$mimeType] ?? [];
+                if (in_array($extension, $allowedExtensions, true)) {
+                    $fileName = uniqid('media_', true) . '.' . $extension;
+                    $destination = __DIR__ . '/../uploads/' . $fileName;
+                    if (move_uploaded_file($file['tmp_name'], $destination)) {
+                        MediaModel::create($fileName, $file['name']);
+                    }
                 }
                 redirect('/' . ADMIN_DIR . '/?page=media');
             }
